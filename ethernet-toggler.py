@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw
 from pystray import Icon, Menu as menu, MenuItem as item
 interface = "Ethernet"
 
+
 def toggle():
     c=wmi.WMI()
     o=c.query("select * from Win32_NetworkAdapter")
@@ -16,6 +17,7 @@ def toggle():
                 print(conn.Disable()) 
             else:
                 conn.Enable()
+
 
 def image(color1, color2, width=64, height=64):
     result = Image.new('RGB', (width, height), color1)
@@ -33,17 +35,18 @@ def on_activate(icon, interface):
         icon.stop()
     else:
         toggle()
-        #icon.update_menu()
 
 
 def setup(icon):
     icon.visible = True
+
 
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
+
 
 if __name__ == '__main__':
     if is_admin():
@@ -52,6 +55,5 @@ if __name__ == '__main__':
 
         icon.run(setup)
     else:
-        # Re-run the program with admin rights
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 0)
 
