@@ -1,32 +1,19 @@
 import wmi
-import pyuac
+import ctypes
+import sys
 import pystray
 import win32
 from PIL import Image, ImageDraw
 from pystray import Icon, Menu as menu, MenuItem as item
+interface = "Ethernet"
 
-interfaces = []
-
-def get_interfaces():
+def toggle():
     c=wmi.WMI()
     o=c.query("select * from Win32_NetworkAdapter")
-    for conn in o:
-        if conn.NetConnectionID and conn.NetEnabled:
-            interfaces.append(conn.NetConnectionID + "- ON")
-        elif conn.NetConnectionID:
-            interfaces.append(conn.NetConnectionID + "- OFF")
-
-def toggle(adapter):
-    if not pyuac.isUserAdmin():
-        pyuac.runAsAdmin()
-
-    c=wmi.WMI()
-    o=c.query("select * from Win32_NetworkAdapter")
-
     for conn in o :
-        if conn.NetConnectionID == adapter:
+        if conn.NetConnectionID == interface:
             if conn.NetEnabled:
-                conn.Disable() 
+                print(conn.Disable()) 
             else:
                 conn.Enable()
 
@@ -45,20 +32,26 @@ def on_activate(icon, interface):
         print('stopping...')
         icon.stop()
     else:
-        toggle(interface)
+        toggle()
         #icon.update_menu()
 
 
 def setup(icon):
     icon.visible = True
 
-get_interfaces()
-items = []
-for interface in interfaces:
-    name = interface.split("-")
-    items.append(item(interface, lambda icon: on_activate(icon, name[0])))
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
 
-menu=menu(*items,menu.SEPARATOR,item("Quit",lambda icon: on_activate(icon,"Quit")))
-icon = Icon('ethernet-toggler',icon=image('white', 'black'),title="ethernet-toggler",menu=menu)
+if __name__ == '__main__':
+    if is_admin():
+        menu=menu(item("Enable/Disable",lambda icon: on_activate(icon,interface)),menu.SEPARATOR,item("Quit",lambda icon: on_activate(icon,"Quit")))
+        icon = Icon('ethernet-toggler',icon=image('white', 'black'),title="ethernet-toggler",menu=menu)
 
-icon.run(setup)
+        icon.run(setup)
+    else:
+        # Re-run the program with admin rights
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 0)
+
